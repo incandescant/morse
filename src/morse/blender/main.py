@@ -168,13 +168,13 @@ def create_dictionaries ():
             persistantstorage.blender_objects[obj] = [pos, ori]
 
     ####
-    # TODO: Move elsewhere
+    # TODO: Move elsewhere. Should perhaps be optional?
     # Try and work out the size of the world
     minWorldX, minWorldY, _ = list(persistantstorage.blender_objects.keys())[0].worldPosition
     maxWorldX = minWorldX
     maxWorldY = minWorldY
-    for obj in persistantstorage.blender_objects.keys():
-        x, y, z = obj.worldPosition.to_tuple()
+    for obj in scene.objects:
+        x, y, _ = obj.worldPosition.to_tuple()
         minWorldX = min(minWorldX, x)
         maxWorldX = max(maxWorldX, x)
         minWorldY = min(minWorldY, y)
@@ -185,16 +185,17 @@ def create_dictionaries ():
     maxWorldY = math.ceil(maxWorldY)
     logger.info("World X values range from %s to %s" % (minWorldX, maxWorldX))
     logger.info("World Y values range from %s to %s" % (minWorldY, maxWorldY))
-    occugrid = {}
-    for x in range(minWorldX, maxWorldX):
-        for y in range(minWorldY, maxWorldY):
-            occugrid[x,y] = 0
+    occugrid = [[0 for x in range(minWorldX, maxWorldX)] for y in range(minWorldY, maxWorldY)]
     width = maxWorldX - minWorldX
     height = maxWorldY - minWorldY
     logger.info("%s cells in x and %s cells in y" % (width, height))
-    for obj in persistantstorage.blender_objects.keys():
-        x, y, z = obj.worldPosition.to_tuple()
-
+    for obj in scene.objects:
+        x, y, _ = obj.worldPosition.to_tuple()
+        # FIXME: get the objects size - not every object has a bounding box
+        x = math.floor(x)
+        y = math.floor(y)
+        occugrid[x][y] = 1
+    logger.info(occugrid)
     # Store the occupancy grid in the persistant store?
     # logger.info("Occupancy grid: \n%s" % occugrid)
     ####
