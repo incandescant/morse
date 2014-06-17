@@ -170,6 +170,8 @@ def create_dictionaries ():
     ####
     # TODO: Move all of this elsewhere. Occupancy grid should perhaps be optional?
     def rounder(num):
+        """
+        """
         if (num % 0.5 < 0.5):
             return math.floor(num)
         elif (num % 0.5 > 0.5):
@@ -179,6 +181,8 @@ def create_dictionaries ():
             return num
 
     def calculate_size(obj):
+        """
+        """
         s = obj.worldScale
         if (len(obj.meshes) == 0):
             logger.info("%s has no meshes, skipping", obj)
@@ -210,16 +214,44 @@ def create_dictionaries ():
             return None
         return dimensions
 
+    def calculate_slots(size):
+        """
+        We've chosen an arbitrary 0.5m as the grid size
+        """
+        rem = size % 0.5
+        if rem > 0.25:
+            # round up to the nearest 0.5
+            size = size - rem
+            size = size + 0.5
+        elif rem < 0.25:
+            # round down to the nearest 0.5
+            size = size - rem
+
+        return size / 0.5
+
+    def print_occugrid(grid):
+        """
+        convert the occugrid to ascii art
+        """
+        return grid
+
     # Try and work out the size of the world
-    minWorldX, minWorldY, _ = list(persistantstorage.blender_objects.keys())[0].worldPosition
+    minWorldX, minWorldY, _ = scene.objects[0].worldPosition
     maxWorldX = minWorldX
     maxWorldY = minWorldY
     for obj in scene.objects:
         x, y, _ = obj.worldPosition.to_tuple()
+        size = calculate_size(obj)
+        if size:
+            sx = size[0]
+            sy = size[1]
+        else:
+            sx = 0
+            sy = 0
         minWorldX = min(minWorldX, x)
-        maxWorldX = max(maxWorldX, x)
+        maxWorldX = max(maxWorldX, x + sx)
         minWorldY = min(minWorldY, y)
-        maxWorldY = max(maxWorldY, y)
+        maxWorldY = max(maxWorldY, y + sy)
     minWorldX = math.floor(minWorldX)
     maxWorldX = math.ceil(maxWorldX)
     minWorldY = math.floor(minWorldY)
@@ -247,15 +279,15 @@ def create_dictionaries ():
         if (dimensions == None):
             logger.info("We'll not be adding %s to the occupancy grid", obj)
             continue
-        else:
-            logger.info("\tGot dimensions %s for %s" % (dimensions, obj))
+
         x = math.floor(x)
         y = math.floor(y)
-        # TODO: we've calculated dimensions, now work out the size from the
-        # origin (x, y) and fill several squares in the grid
-        occugrid[x][y] = 1
+        logger.info("%s at (%s,%s) has x=%s y=%s z=%s" % (obj, x, y, dimensions[0], dimensions[1], dimensions[2]))
+        for ox in range(int(x), int(x + dimensions[0])):
+            for oy in range(int(y), int(y + dimensions[1])):
+                occugrid[ox][oy] = 1
     # TODO: Store the occupancy grid in the persistant store?
-    logger.info("Occupancy grid: \n%s" % occugrid)
+    logger.info("Occupancy grid: \n%s" % print_occugrid(occugrid))
     ####
 
     # Get the list of passive interactive objects.
