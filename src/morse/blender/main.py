@@ -168,7 +168,48 @@ def create_dictionaries ():
             persistantstorage.blender_objects[obj] = [pos, ori]
 
     ####
-    # TODO: Move elsewhere. Should perhaps be optional?
+    # TODO: Move all of this elsewhere. Occupancy grid should perhaps be optional?
+    def rounder(num):
+        if (num % 0.5 < 0.5):
+            return math.floor(num)
+        elif (num % 0.5 > 0.5):
+            return math.ceil(num)
+        else:
+            logger.error("Something went wrong in rounder()")
+            return num
+
+    def calculate_size(obj):
+        s = obj.worldScale
+        if (len(obj.meshes) == 0):
+            logger.info("%s has no meshes, skipping", obj)
+            return None
+        mesh = obj.meshes[0]
+        verts = [[], [], []]
+        for mat in range(len(mesh.materials)):
+            for v in range(mesh.getVertexArrayLength(mat)):
+                vert = mesh.getVertex(mat, v)
+                pos = vert.getXYZ()
+                verts[0].append(pos[0])
+                verts[1].append(pos[1])
+                verts[2].append(pos[2])
+        verts[0].sort()
+        verts[1].sort()
+        verts[2].sort()
+        size = [round((verts[0][len(verts[0]) - 1] - verts[0][0]) * s[0], 1),
+                 round((verts[1][len(verts[1]) - 1] - verts[1][0]) * s[1], 1),
+                 round((verts[2][len(verts[2]) - 1] - verts[2][0]) * s[2], 1)]
+
+        size[0] = rounder(size[0])
+        size[1] = rounder(size[1])
+        size[2] = rounder(size[2])
+
+        dimensions = mathutils.Vector(size)
+        z = mathutils.Vector()
+        z.zero()
+        if (dimensions == z):
+            return None
+        return dimensions
+
     # Try and work out the size of the world
     minWorldX, minWorldY, _ = list(persistantstorage.blender_objects.keys())[0].worldPosition
     maxWorldX = minWorldX
@@ -185,19 +226,36 @@ def create_dictionaries ():
     maxWorldY = math.ceil(maxWorldY)
     logger.info("World X values range from %s to %s" % (minWorldX, maxWorldX))
     logger.info("World Y values range from %s to %s" % (minWorldY, maxWorldY))
+    # TODO: we may need a better data structure that allows for full detail
     occugrid = [[0 for x in range(minWorldX, maxWorldX)] for y in range(minWorldY, maxWorldY)]
     width = maxWorldX - minWorldX
     height = maxWorldY - minWorldY
     logger.info("%s cells in x and %s cells in y" % (width, height))
+    morse_builtins = [ "MORSE.Properties", "Scene_Script_Holder", "CameraFP", "Screen", "Screen_frame", "CameraID_text", "HUD_plane", "Title_text", "Keys_text", "Compass" ]
     for obj in scene.objects:
+        if (obj.name in morse_builtins):
+            # We don't need to add certain builtin objects to the occupancy grid
+            #logger.info("Not adding %s to occupancy grid", obj)
+            continue
+        logger.info("Here's '%s'", obj)
         x, y, _ = obj.worldPosition.to_tuple()
-        # FIXME: get the objects size - not every object has a bounding box
+        # Compute the maximum size of the mesh in each dimension and use that as the dimensions
+        # for the object.
+        # http://blenderartists.org/forum/showthread.php?286797-get-Dimensions-of-an-object-using-python
+        # TODO: refactor out?
+        dimensions = calculate_size(obj)
+        if (dimensions == None):
+            logger.info("We'll not be adding %s to the occupancy grid", obj)
+            continue
+        else:
+            logger.info("\tGot dimensions %s for %s" % (dimensions, obj))
         x = math.floor(x)
         y = math.floor(y)
+        # TODO: we've calculated dimensions, now work out the size from the
+        # origin (x, y) and fill several squares in the grid
         occugrid[x][y] = 1
-    logger.info(occugrid)
-    # Store the occupancy grid in the persistant store?
-    # logger.info("Occupancy grid: \n%s" % occugrid)
+    # TODO: Store the occupancy grid in the persistant store?
+    logger.info("Occupancy grid: \n%s" % occugrid)
     ####
 
     # Get the list of passive interactive objects.
