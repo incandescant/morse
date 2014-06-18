@@ -292,7 +292,7 @@ def create_dictionaries ():
         # http://blenderartists.org/forum/showthread.php?286797-get-Dimensions-of-an-object-using-python
         # TODO: refactor out?
         dimensions = calculate_size(obj)
-        if (dimensions == None):
+        if (dimensions == None or dimensions[2] < 0.1):
             logger.info("We'll not be adding %s to the occupancy grid", obj)
             continue
 
