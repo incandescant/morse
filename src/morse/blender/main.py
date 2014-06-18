@@ -274,6 +274,7 @@ def create_dictionaries ():
     logger.info("World X values range from %s to %s" % (minWorldX, maxWorldX))
     logger.info("World Y values range from %s to %s" % (minWorldY, maxWorldY))
     # TODO: we may need a better data structure that allows for full detail
+    # FIXME: current occugrid structure only works for a few scenes
     occugrid = [[0 for x in range(minWorldX, maxWorldX)] for y in range(minWorldY, maxWorldY)]
     width = maxWorldX - minWorldX
     height = maxWorldY - minWorldY
