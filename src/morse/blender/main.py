@@ -237,7 +237,14 @@ def create_dictionaries ():
         """
         convert the occugrid to ascii art
         """
-        return grid
+        ret = ""
+        for row in grid:
+            r = ""
+            for entry in row:
+                r += str(entry)
+            ret = ret + r + "\n"
+        return ret.replace("0", "-").replace("1", "#")
+
 
     # Try and work out the size of the world
     minWorldX, minWorldY, _ = scene.objects[0].worldPosition
