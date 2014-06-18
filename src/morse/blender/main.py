@@ -169,19 +169,23 @@ def create_dictionaries ():
 
     ####
     # TODO: Move all of this elsewhere. Occupancy grid should perhaps be optional?
+    # TODO: implement map updates
+    # TODO: expose map via socket API
     def rounder(num):
         """
+        We need to round to the closest .5 in order to be able to
+        create the grid of 1/4m slots.
         """
         if (num % 0.5 < 0.5):
             return math.floor(num)
-        elif (num % 0.5 > 0.5):
+        elif (num % 0.5 >= 0.5):
             return math.ceil(num)
-        else:
-            logger.error("Something went wrong in rounder()")
-            return num
 
     def calculate_size(obj):
         """
+        Calculate the maximum size of obj in x, y, & z dimensions
+        Returns mathutils.Vector() with x, y & z or None in the
+        case of an error.
         """
         s = obj.worldScale
         if (len(obj.meshes) == 0):
@@ -239,6 +243,10 @@ def create_dictionaries ():
     minWorldX, minWorldY, _ = scene.objects[0].worldPosition
     maxWorldX = minWorldX
     maxWorldY = minWorldY
+    # FIXME: we iterate scene.objects multiple times and call
+    # methods which calculate things mutliple times - we should
+    # probably iterate scene.objects once, perform all of the
+    # calculations once and store the results in a local cache.
     for obj in scene.objects:
         x, y, _ = obj.worldPosition.to_tuple()
         size = calculate_size(obj)
